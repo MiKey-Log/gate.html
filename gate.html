@@ -3,10 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MikeyLog - 究極の扉</title>
+    <title>MikeyLog - TIME TRAVEL</title>
     <style>
         body, html { margin: 0; padding: 0; height: 100vh; background: #000; overflow: hidden; font-family: sans-serif; color: #feda4a; }
-        #matrix-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+        
+        /* 演出レイヤー */
+        canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; }
+        #matrix-canvas { z-index: 1; }
+        #warp-canvas { z-index: 60; display: none; }
+
         #guide-msg { 
             position: absolute; top: 50%; left: 0; width: 100%; text-align: center; 
             color: #0f0; cursor: pointer; font-size: 24px; font-weight: bold; 
@@ -14,6 +19,8 @@
             padding: 40px 0; background: rgba(0,0,0,0.8); letter-spacing: 0.3em;
             text-shadow: 0 0 10px #0f0;
         }
+
+        /* スターウォーズ */
         .star-wars-window { position: absolute; width: 100%; height: 100%; perspective: 250px; display: flex; justify-content: center; z-index: 2; visibility: hidden; }
         .crawl-text {
             position: absolute; width: 90%; bottom: -120%; font-size: 6vw; 
@@ -22,18 +29,22 @@
             text-shadow: 0 0 15px rgba(254, 218, 74, 0.8);
         }
         @media screen and (min-width: 768px) { .crawl-text { font-size: 36px; } }
-        @keyframes crawl-animation { 0% { transform: rotateX(20deg) translateY(0); } 100% { transform: rotateX(20deg) translateY(-380%); } }
+        @keyframes crawl-animation { 0% { transform: rotateX(20deg) translateY(0); } 100% { transform: rotateX(20deg) translateY(-400%); } }
 
+        /* 扉 */
         #door-wrapper { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 160px; height: 260px; border: 4px solid #444; background: #111; display: none; perspective: 1000px; z-index: 50; }
         #door-leaf { width: 100%; height: 100%; background: #4e342e; transform-origin: left; transition: transform 3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid #222; }
         #final-text-logo { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0; transition: opacity 2s; padding: 10px 20px; background: #eee; border: 4px solid #0f0; color: #000; font-weight: bold; font-size: 28px; white-space: nowrap; z-index: 40; box-shadow: 0 0 20px rgba(0,255,0,0.8); }
-        #white-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; opacity: 0; pointer-events: none; transition: opacity 3s; z-index: 999; }
+        
+        #white-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; opacity: 0; pointer-events: none; transition: opacity 0.5s; z-index: 999; }
     </style>
 </head>
 <body onclick="start()">
 
     <canvas id="matrix-canvas"></canvas>
-    <div id="guide-msg">INITIALIZING SYSTEM...<br>TAP TO START</div>
+    <canvas id="warp-canvas"></canvas>
+    
+    <div id="guide-msg">SYSTEM READY...<br>TAP TO TIME TRAVEL</div>
 
     <div class="star-wars-window" id="sw-win">
         <div id="text-content" class="crawl-text">
@@ -51,118 +62,82 @@
     <div id="white-screen"></div>
 
     <script>
-        // Matrix Canvas Logic
-        const canvas = document.getElementById('matrix-canvas');
-        const ctx = canvas.getContext('2d');
-        let matrixActive = true;
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$+-*/=%\"'#&_(),.;:?!\\|{}<>[]^~";
-        const fontSize = 16;
-        const columns = canvas.width / fontSize;
-        const drops = Array(Math.floor(columns)).fill(1);
-
-        function drawMatrix() {
-            if (!matrixActive) return;
-            ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = "#0F0";
-            ctx.font = fontSize + "px monospace";
-            for (let i = 0; i < drops.length; i++) {
-                const text = characters.charAt(Math.floor(Math.random() * characters.length));
-                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
-                drops[i]++;
-            }
+        // --- Matrix Logic ---
+        const mCanvas = document.getElementById('matrix-canvas');
+        const mCtx = mCanvas.getContext('2d');
+        let mActive = true;
+        mCanvas.width = window.innerWidth; mCanvas.height = window.innerHeight;
+        const chars = "01";
+        const drops = Array(Math.floor(mCanvas.width/16)).fill(1);
+        function drawM() {
+            if(!mActive) return;
+            mCtx.fillStyle="rgba(0,0,0,0.05)"; mCtx.fillRect(0,0,mCanvas.width,mCanvas.height);
+            mCtx.fillStyle="#0F0"; mCtx.font="16px monospace";
+            drops.forEach((y,i)=>{
+                mCtx.fillText(chars[Math.floor(Math.random()*chars.length)], i*16, y*16);
+                if(y*16>mCanvas.height && Math.random()>0.975) drops[i]=0; drops[i]++;
+            });
         }
-        let matrixInterval = setInterval(drawMatrix, 35);
+        setInterval(drawM, 35);
 
+        // --- Warp Logic (BTTF Style) ---
+        const wCanvas = document.getElementById('warp-canvas');
+        const wCtx = wCanvas.getContext('2d');
+        wCanvas.width = window.innerWidth; wCanvas.height = window.innerHeight;
+        let stars = [];
+        function createStars() {
+            for(let i=0; i<200; i++) stars.push({x: Math.random()*wCanvas.width-wCanvas.width/2, y: Math.random()*wCanvas.height-wCanvas.height/2, z: Math.random()*wCanvas.width, o: Math.random()});
+        }
+        function drawWarp() {
+            wCtx.fillStyle="rgba(0,0,0,0.2)"; wCtx.fillRect(0,0,wCanvas.width,wCanvas.height);
+            wCtx.strokeStyle="#fff";
+            stars.forEach(s => {
+                s.z -= 15; // 加速感
+                if(s.z <= 0) s.z = wCanvas.width;
+                let x = (s.x / s.z) * wCanvas.width + wCanvas.width/2;
+                let y = (s.y / s.z) * wCanvas.height + wCanvas.height/2;
+                let x2 = (s.x / (s.z + 50)) * wCanvas.width + wCanvas.width/2;
+                let y2 = (s.y / (s.z + 50)) * wCanvas.height + wCanvas.height/2;
+                wCtx.lineWidth = 2; wCtx.beginPath(); wCtx.moveTo(x,y); wCtx.lineTo(x2,y2); wCtx.stroke();
+            });
+            requestAnimationFrame(drawWarp);
+        }
+
+        // --- Main Audio & Sequence ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         let isStarted = false;
 
-        function playDoorSound() {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(70, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(110, audioCtx.currentTime + 3);
+        function playSound(freq, dur, type="sawtooth") {
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(freq*1.5, audioCtx.currentTime + dur);
             gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 3.5);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
             osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + 3.5);
+            osc.start(); osc.stop(audioCtx.currentTime + dur);
         }
 
-        // iPhone対策：ナレーションと演出のトリガー
-        function startVoiceAndVisuals() {
-            const text = "このキーボックスの扉を開いた時、新しい未来への扉が開きます。さぁ未知への一歩を踏み出そう。今すぐ、QRコードをスキャンするんだ！そこには、これまでの自分ではない、未来のあなたが、笑顔で手を振って待っています。";
-            const uttr = new SpeechSynthesisUtterance(text);
-            
-            // ボイス設定（ダンディ優先）
+        function startSequence() {
+            const uttr = new SpeechSynthesisUtterance("このキーボックスの扉を開いた時、新しい未来への扉が開きます。さぁ未知への一歩を踏み出そう。今すぐ、QRコードをスキャンするんだ！そこには、これまでの自分ではない、未来のあなたが、笑顔で手を振って待っています。");
             const voices = window.speechSynthesis.getVoices();
-            const maleVoice = voices.find(v => v.lang.includes("ja") && (v.name.includes("Male") || v.name.includes("Siri") || v.name.includes("Otoya"))) || 
-                             voices.find(v => v.lang.includes("ja") && v.name.includes("Google"));
-            if (maleVoice) uttr.voice = maleVoice;
-            uttr.lang = "ja-JP"; 
-            uttr.rate = 0.8; 
-            uttr.pitch = 0.5;
+            uttr.voice = voices.find(v => v.lang.includes("ja") && (v.name.includes("Male") || v.name.includes("Siri") || v.name.includes("Otoya"))) || voices.find(v => v.lang.includes("ja") && v.name.includes("Google"));
+            uttr.rate = 0.8; uttr.pitch = 0.5;
 
-            // 重要：iPhoneで確実に扉を出すための予備タイマー（万が一ナレーションが落ちても扉は出す）
-            const backupTimer = setTimeout(showDoorSequence, 28000);
+            const backup = setTimeout(showDoor, 28000);
+            uttr.onend = () => { clearTimeout(backup); setTimeout(showDoor, 1000); };
 
-            uttr.onstart = () => {
-                console.log("Speech started");
-            };
-
-            uttr.onend = () => {
-                clearTimeout(backupTimer);
-                setTimeout(showDoorSequence, 1200);
-            };
-
-            // マトリックスをフェードアウトさせてスクロール開始
-            matrixActive = false;
-            canvas.style.transition = "opacity 2s";
-            canvas.style.opacity = "0";
-            
+            mActive = false; mCanvas.style.transition = "opacity 2s"; mCanvas.style.opacity = "0";
             setTimeout(() => {
                 document.getElementById('sw-win').style.visibility = 'visible';
                 document.getElementById('text-content').style.display = 'block';
                 document.getElementById('text-content').style.animation = 'crawl-animation 45s linear forwards';
             }, 500);
-
             window.speechSynthesis.speak(uttr);
         }
 
-        function showDoorSequence() {
+        function showDoor() {
             document.getElementById('sw-win').style.display = 'none';
             document.getElementById('door-wrapper').style.display = 'block';
             setTimeout(() => {
-                playDoorSound();
-                document.getElementById('door-leaf').style.transform = 'rotateY(-120deg)';
-                document.getElementById('final-text-logo').style.opacity = '1';
-                setTimeout(() => { document.getElementById('white-screen').style.opacity = '1'; }, 5000);
-            }, 1000);
-        }
-
-        function start() {
-            if(isStarted) return;
-            isStarted = true;
-
-            // iPhoneのオーディオコンテキスト再開
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            
-            // iPhone対策：空の音声を発音させて音声エンジンを「起こす」
-            window.speechSynthesis.cancel();
-            const wakeup = new SpeechSynthesisUtterance("");
-            window.speechSynthesis.speak(wakeup);
-
-            document.getElementById('guide-msg').style.display = 'none';
-
-            // 1秒待ってから本番開始（エンジンの準備時間を稼ぐ）
-            setTimeout(startVoiceAndVisuals, 1000);
-        }
-
-        // iPhone用ボイスリストのプリロード
-        window.speechSynthesis.getVoices();
-    </script>
-</body>
-</html>
+                playSound(60, 3); // 扉の音
+                document.getElementById('door-leaf').style
