@@ -5,25 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MikeyLog - 未知への扉</title>
     <style>
-        body, html { margin: 0; padding: 0; height: 100vh; background: #000; overflow: hidden; font-family: "Helvetica Neue", Arial, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "BIZ UDPGothic", sans-serif;      
-        #guide-msg { position: absolute; top: 50%; width: 100%; text-align: center; color: #fff; cursor: pointer; font-size: 24px; font-weight: bold; transform: translateY(-50%); z-index: 100; border: 2px solid #fff; padding: 20px 0; background: rgba(0,0,0,0.5); }
+        /* 基本設定：フォントを力強くモダンに */
+        body, html { 
+            margin: 0; padding: 0; height: 100vh; background: #000; overflow: hidden; 
+            font-family: "Helvetica Neue", Arial, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "BIZ UDPGothic", sans-serif; 
+            color: #feda4a; 
+        }
         
-        /* スターウォーズ風 3Dスクロール復活 */
+        #guide-msg { 
+            position: absolute; top: 50%; left: 0; width: 100%; text-align: center; 
+            color: #fff; cursor: pointer; font-size: 24px; font-weight: bold; 
+            transform: translateY(-50%); z-index: 100; border: 2px solid #fff; 
+            padding: 20px 0; background: rgba(0,0,0,0.5); 
+        }
+        
+        /* スターウォーズ風 3Dスクロール */
         .star-wars-window {
             position: absolute; width: 100%; height: 100%;
-            perspective: 300px; /* 奥行き感 */
+            perspective: 300px;
             display: flex; justify-content: center;
         }
         .crawl-text {
-            position: absolute; width: 80%; bottom: -100%;
+            position: absolute; width: 85%; bottom: -110%;
             font-size: 32px; font-weight: bold; text-align: center; line-height: 2.5;
             transform-origin: 50% 100%;
-            transform: rotateX(25deg); /* 斜めに倒す */
+            transform: rotateX(25deg);
             display: none;
+            /* 文字に影をつけて見やすく */
+            text-shadow: 2px 2px 5px rgba(0,0,0,0.8);
         }
         @keyframes crawl-animation {
             0% { transform: rotateX(25deg) translateY(0); }
-            100% { transform: rotateX(25deg) translateY(-250%); }
+            100% { transform: rotateX(25deg) translateY(-280%); }
         }
 
         #door-wrapper { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 180px; height: 280px; border: 4px solid #444; background: #111; display: none; perspective: 1000px; z-index: 50; }
@@ -31,6 +44,7 @@
         #door-leaf::after { content: ""; width: 15px; height: 15px; background: #d4af37; border-radius: 50%; position: absolute; right: 15px; top: 50%; box-shadow: 0 0 5px #000; }
 
         #final-text-logo { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0; transition: opacity 2s; padding: 10px 20px; background: #eee; border: 5px solid #0f0; color: #000; font-weight: bold; font-size: 32px; white-space: nowrap; z-index: 40; box-shadow: 0 0 20px rgba(0,255,0,0.5); }
+        
         #white-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; opacity: 0; pointer-events: none; transition: opacity 3s; z-index: 999; }
     </style>
 </head>
@@ -74,8 +88,6 @@
         function speakAsMale() {
             const text = "このキーボックスの扉を開いた時、新しい未来への扉が開きます。さぁ未知への一歩を踏み出そう。今すぐ、QRコードをスキャンするんだ！そこには、これまでの自分ではない、未来のあなたが、笑顔で手を振って待っています。";
             const uttr = new SpeechSynthesisUtterance(text);
-            
-            // 全ての音声リストから男性（Google 日本語 など）を探す
             const voices = window.speechSynthesis.getVoices();
             const maleVoice = voices.find(voice => 
                 (voice.lang === "ja-JP" || voice.lang === "ja_JP") && 
@@ -84,8 +96,8 @@
 
             if (maleVoice) uttr.voice = maleVoice;
             uttr.lang = "ja-JP"; 
-            uttr.rate = 0.85; // ゆっくり
-            uttr.pitch = 0.8; // ピッチを下げて男性らしく
+            uttr.rate = 0.85; 
+            uttr.pitch = 0.8; 
             window.speechSynthesis.speak(uttr);
         }
 
@@ -99,14 +111,12 @@
             txt.style.display = 'block';
             txt.style.animation = 'crawl-animation 25s linear forwards';
 
-            // 男性ボイスで喋る（読み上げリスト取得のため少し遅らせる場合がある）
             if (speechSynthesis.getVoices().length === 0) {
                 speechSynthesis.onvoiceschanged = speakAsMale;
             } else {
                 speakAsMale();
             }
 
-            // 24秒後に扉が登場
             setTimeout(() => {
                 txt.style.display = 'none';
                 document.getElementById('door-wrapper').style.display = 'block';
