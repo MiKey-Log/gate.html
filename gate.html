@@ -5,125 +5,89 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MikeyLog - 未知への扉</title>
     <style>
-        body, html { margin: 0; padding: 0; height: 100vh; background: #000; overflow: hidden; font-family: "Arial", "sans-serif"; color: #feda4a; }
+        body, html { margin: 0; padding: 0; height: 100vh; background: #000; overflow: hidden; font-family: sans-serif; color: #feda4a; }
+        #guide-msg { position: absolute; top: 50%; width: 100%; text-align: center; color: #fff; cursor: pointer; font-size: 24px; font-weight: bold; transform: translateY(-50%); z-index: 100; }
+        
+        .crawl-text { font-size: 24px; font-weight: bold; text-align: center; line-height: 2.5; position: absolute; bottom: 0; width: 100%; display: none; }
+        @keyframes crawl { 0% { transform: translateY(100vh) rotateX(25deg); } 100% { transform: translateY(-160vh) rotateX(25deg); } }
 
-        /* スターウォーズ風テキスト */
-        .star-wars-container {
-            position: absolute; width: 100%; height: 100%;
-            display: flex; justify-content: center; align-items: flex-end;
-            perspective: 400px; z-index: 10;
-        }
-        .crawl-text {
-            font-size: 26px; font-weight: bold; text-align: center; line-height: 2.5;
-            transform: rotateX(25deg); animation: crawl 25s linear forwards;
-            display: none;
-        }
-        @keyframes crawl {
-            0% { transform: rotateX(25deg) translateY(100vh); opacity: 1; }
-            100% { transform: rotateX(25deg) translateY(-160vh); opacity: 0; }
-        }
+        #door-wrapper { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 180px; height: 280px; border: 4px solid #444; background: #111; display: none; perspective: 1000px; }
+        #door-leaf { width: 100%; height: 100%; background: #4e342e; transform-origin: left; transition: transform 3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid #222; z-index: 20; }
+        #door-leaf::after { content: ""; width: 15px; height: 15px; background: #d4af37; border-radius: 50%; position: absolute; right: 15px; top: 50%; }
 
-        /* 普通の扉 */
-        #door-wrapper {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 180px; height: 280px; border: 6px solid #444; background: #111;
-            display: none; perspective: 1200px; z-index: 20;
-        }
-        #door-leaf {
-            width: 100%; height: 100%; background: #4e342e;
-            border: 1px solid #331d1a; transform-origin: left;
-            transition: transform 3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex; align-items: center; justify-content: flex-end;
-            z-index: 25;
-        }
-        #door-leaf::after { content: ""; width: 15px; height: 15px; background: #d4af37; border-radius: 50%; margin-right: 15px; }
-
-        /* 文字ロゴ（緑枠・黒文字） */
-        #final-text-logo {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            opacity: 0; transition: opacity 2s; z-index: 5;
-            padding: 10px 20px; background-color: #f0f0f0; border: 5px solid #00ff00;
-            color: #000000; font-size: 32px; font-weight: bold; white-space: nowrap; border-radius: 5px;
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
-        }
-
-        /* 最後のホワイトアウト */
-        #white-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #fff; opacity: 0; pointer-events: none; transition: opacity 2.5s; z-index: 100;
-        }
-
-        /* 最初の案内メッセージ */
-        #guide-msg { 
-            position: absolute; top: 50%; width: 100%; text-align: center; 
-            color: #fff; cursor: pointer; z-index: 200; font-size: 24px; 
-            font-weight: bold; transform: translateY(-50%);
-        }
+        #final-text-logo { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0; transition: opacity 2s; padding: 10px 20px; background: #eee; border: 5px solid #0f0; color: #000; font-weight: bold; font-size: 32px; white-space: nowrap; z-index: 10; box-shadow: 0 0 20px rgba(0,255,0,0.5); }
+        #white-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; opacity: 0; pointer-events: none; transition: opacity 2.5s; z-index: 999; }
     </style>
 </head>
-<body onclick="startJourney()">
+<body onclick="start()">
 
-    <div id="guide-msg">画面をタップして旅にでよう！</div>
+    <div id="guide-msg">【画面をタップして旅を始める】</div>
 
-    <div id="intro-box" class="star-wars-container">
-        <div id="text-content" class="crawl-text">
-            このキーボックスの扉を開いた時、<br>
-            新しい未来への扉が開きます。<br><br>
-            さぁ未知への一歩を踏み出そう。<br><br>
-            今すぐ、QRコードをスキャンするんだ！<br><br>
-            そこには、今までの自分ではない<br>
-            未来の輝かしいあなたが笑顔で<br>
-            手を差し伸べて待っています。
-        </div>
+    <div id="text-content" class="crawl-text">
+        このキーボックスの扉を開いた時、<br>新しい未来への扉が開きます。<br><br>
+        さぁ未知への一歩を踏み出そう。<br><br>
+        今すぐ、QRコードをスキャンするんだ！<br><br>
+        そこには、今までの自分ではない<br>未来の輝かしいあなたが笑顔で<br>手を差し伸べて待っています。
     </div>
 
     <div id="door-wrapper">
         <div id="final-text-logo">MiKey Log</div>
         <div id="door-leaf"></div>
     </div>
-
     <div id="white-screen"></div>
 
     <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         let isStarted = false;
 
-        // ナレーション機能
-        function speakMessage() {
-            const text = "このキーボックスの扉を開いた時、新しい未来への扉が開きます。さぁ未知への一歩を踏み出そう。今すぐ、QRコードをスキャンするんだ！そこには、今までの自分ではない、未来の輝かしいあなたが、笑顔で手を差し伸べて待っています。";
-            const uttr = new SpeechSynthesisUtterance(text);
-            uttr.lang = "ja-JP";
-            uttr.rate = 0.9;
-            window.speechSynthesis.speak(uttr);
+        // 扉が開く音（ギィィィ…）
+        function playDoorSound() {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(85, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(130, audioCtx.currentTime + 2.5);
+            gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 3);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 3);
         }
 
-        function startJourney() {
-            if (isStarted) return;
+        function start() {
+            if(isStarted) return;
             isStarted = true;
-            
-            // 案内を消してテキストを表示
+
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
             document.getElementById('guide-msg').style.display = 'none';
-            document.getElementById('text-content').style.display = 'block';
-            
-            // ナレーション開始
-            speakMessage();
+            const txt = document.getElementById('text-content');
+            txt.style.display = 'block';
+            txt.style.animation = 'crawl 24s linear forwards';
 
-            // 23秒後に扉を登場させる（ナレーションと同期）
+            // ナレーション
+            const uttr = new SpeechSynthesisUtterance("このキーボックスの扉を開いた時、新しい未来への扉が開きます。さぁ未知への一歩を踏み出そう。今すぐ、QRコードをスキャンするんだ！そこには、今までの自分ではない、未来の輝かしいあなたが、笑顔で手を差し伸べて待っています。");
+            uttr.lang = "ja-JP"; 
+            uttr.rate = 0.85; // 心に響くよう、少しだけゆっくり
+            speechSynthesis.speak(uttr);
+
+            // 演出の進行
             setTimeout(() => {
-                document.getElementById('intro-box').style.display = 'none';
+                txt.style.display = 'none';
                 document.getElementById('door-wrapper').style.display = 'block';
-
+                
                 setTimeout(() => {
-                    // 扉が開く動作
-                    document.getElementById('door-leaf').style.transform = 'rotateY(-110deg)';
+                    // 扉が開く音と動き
+                    playDoorSound();
+                    document.getElementById('door-leaf').style.transform = 'rotateY(-115deg)';
                     document.getElementById('final-text-logo').style.opacity = '1';
-
+                    
                     setTimeout(() => {
-                        // 真っ白な世界へ
                         document.getElementById('white-screen').style.opacity = '1';
-                    }, 4000);
-                }, 2000);
-
-            }, 23000); 
+                    }, 4500);
+                }, 1500);
+            }, 23500);
         }
     </script>
 </body>
