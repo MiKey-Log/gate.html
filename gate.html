@@ -1,1 +1,106 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MikeyLog - 未知への扉</title>
+    <style>
+        :root { --accent-color: #000; }
+        body { 
+            margin: 0; display: flex; flex-direction: column; justify-content: center; 
+            align-items: center; height: 100vh; font-family: "serif";
+            background-color: #fcfcfc; color: #1a1a1a; transition: background 0.8s;
+            cursor: pointer; overflow: hidden;
+        }
+        #door-frame { 
+            text-align: center; padding: 50px; width: 80%; max-width: 500px; 
+            background: #fff; border: 1px solid #eee;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        
+        /* モード演出 */
+        body.mode-dark { background-color: #050505; color: #eee; }
+        body.mode-dark #door-frame { background: #111; border: 1px solid #222; }
+        body.mode-gold { background-color: #1a1500; color: #d4af37; }
+        body.mode-gold #door-frame { background: #221d00; border: 1px solid #332b00; }
 
+        .title { font-size: 10px; letter-spacing: 5px; margin-bottom: 30px; opacity: 0.5; text-transform: uppercase; }
+        .msg-area { font-size: 22px; font-weight: 500; line-height: 1.8; min-height: 200px; display: flex; align-items: center; justify-content: center; }
+        
+        /* 指定ロゴ（MiKey-Log.png） */
+        .logo-container { margin-top: 40px; }
+        .logo-container img { width: 80px; height: 80px; border-radius: 50%; filter: grayscale(100%); transition: 0.5s; }
+        body.mode-dark img, body.mode-gold img { filter: grayscale(0%); }
+
+        .fade-in { animation: doorOpen 0.8s ease-out forwards; }
+        @keyframes doorOpen { 
+            from { opacity: 0; transform: scale(0.98) translateY(10px); } 
+            to { opacity: 1; transform: scale(1) translateY(0); } 
+        }
+    </style>
+</head>
+<body onclick="interact()">
+
+    <div id="door-frame">
+        <div class="title" id="mode-label">GATE TO THE UNKNOWN</div>
+        
+        <div id="msg-container" class="fade-in">
+            <div id="display-text" class="msg-area">扉を叩いてください。</div>
+        </div>
+
+        <div class="logo-container">
+            <img src="MiKey-Log.png" onerror="this.src='https://avatars.githubusercontent.com/u/190809794?v=4'" alt="Logo">
+        </div>
+    </div>
+
+<script>
+    (function() {
+        const contents = [
+            { label: "NORMAL GATE", bg: "mode-normal", freq: 880, texts: ["扉の向こうに、答えはない。問いがあるだけだ。", "昨日の自分を、そこに置いていきなさい。", "未知とは、まだ思い出していない記憶のこと。", "正解を探すのをやめた時、道が現れる。"] },
+            { label: "DARK GATE", bg: "mode-dark", freq: 220, texts: ["暗闇に慣れた時、真実が形を成す。", "あなたが扉を見ている時、扉もまたあなたを見ている。", "深淵をのぞく覚悟はあるか。", "逃げ道は、入り口でもあった。"] },
+            { label: "GOLDEN GATE", bg: "mode-gold", freq: 1200, texts: ["価値あるものは、常に静寂の中に隠れている。", "最も遠い道が、最も近い近道だった。", "完成とは、削るものがなくなった状態のこと。", "思考の扉を閉じ、感覚の扉を開け。"] }
+        ];
+
+        let audioCtx = null;
+        let currentMode = Math.floor(Math.random() * contents.length);
+        let textIdx = 0;
+
+        window.interact = function() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            const cfg = contents[currentMode];
+            document.body.className = cfg.bg;
+            document.getElementById('mode-label').innerText = cfg.label;
+
+            // テキスト更新
+            const container = document.getElementById('msg-container');
+            const display = document.getElementById('display-text');
+            
+            container.classList.remove('fade-in');
+            void container.offsetWidth; // 強制リフロー
+            
+            display.innerText = cfg.texts[textIdx];
+            container.classList.add('fade-in');
+
+            // サウンド（未知の響き）
+            playTone(cfg.freq);
+
+            textIdx = (textIdx + 1) % cfg.texts.length;
+            if (textIdx === 0) currentMode = (currentMode + 1) % contents.length;
+        };
+
+        function playTone(freq) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.02, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+        }
+    })();
+</script>
+</body>
+</html>
