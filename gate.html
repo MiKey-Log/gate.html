@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MikeyLog - STABLE</title>
+    <title>MikeyLog - ULTIMATE STABLE</title>
     <style>
-        body, html { margin: 0; padding: 0; height: 100vh; background: #000; overflow: hidden; font-family: sans-serif; color: #feda4a; -webkit-text-size-adjust: 100%; }
-        canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        body, html { margin: 0; padding: 0; height: 100vh; background: #000; overflow: hidden; font-family: sans-serif; color: #feda4a; }
+        canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: block; }
         #matrix-canvas { z-index: 1; }
         #warp-canvas { z-index: 60; display: none; }
 
@@ -14,13 +14,13 @@
             position: absolute; top: 50%; left: 0; width: 100%; text-align: center; 
             color: #0f0; cursor: pointer; font-size: 24px; font-weight: bold; 
             transform: translateY(-50%); z-index: 100; border: 1px solid #0f0; 
-            padding: 40px 0; background: rgba(0,0,0,0.85); letter-spacing: 0.3em;
+            padding: 40px 0; background: rgba(0,0,0,0.9); letter-spacing: 0.3em;
             text-shadow: 0 0 10px #0f0;
         }
 
         .star-wars-window { position: absolute; width: 100%; height: 100%; perspective: 350px; display: flex; justify-content: center; z-index: 2; visibility: hidden; }
         .crawl-text {
-            position: absolute; width: 85%; bottom: -50px; font-size: 6.5vw; 
+            position: absolute; width: 85%; bottom: -100px; font-size: 6.5vw; 
             font-weight: 900; text-align: center; line-height: 2.5;
             transform-origin: 50% 100%; transform: rotateX(25deg); 
             display: none; color: #feda4a;
@@ -28,7 +28,7 @@
         }
         @keyframes crawl-animation { 
             0% { transform: rotateX(25deg) translateY(0); } 
-            100% { transform: rotateX(25deg) translateY(-180%); } 
+            100% { transform: rotateX(25deg) translateY(-200%); } 
         }
 
         #door-wrapper { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 160px; height: 260px; border: 4px solid #444; background: #111; display: none; perspective: 1000px; z-index: 50; }
@@ -37,14 +37,14 @@
 
         .shaking { animation: screen-shake 0.1s infinite; }
         @keyframes screen-shake { 0% { transform: translate(2px, -2px); } 50% { transform: translate(-2px, 2px); } 100% { transform: translate(0,0); } }
-        #white-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; opacity: 0; pointer-events: none; transition: opacity 0.5s; z-index: 999; }
+        #white-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; opacity: 0; pointer-events: none; transition: opacity 0.8s; z-index: 999; }
     </style>
 </head>
 <body onclick="start()">
 
     <canvas id="matrix-canvas"></canvas>
     <canvas id="warp-canvas"></canvas>
-    <div id="guide-msg">SYSTEM STABLE<br>TAP TO START</div>
+    <div id="guide-msg">BOOT SYSTEM...<br>TAP TO START</div>
 
     <div class="star-wars-window" id="sw-win">
         <div id="text-content" class="crawl-text">
@@ -62,15 +62,15 @@
     <div id="white-screen"></div>
 
     <script>
-        // 1. Matrix描画 (負荷を最小限に)
+        // --- Matrix Engine (Optimized) ---
         const mCanvas = document.getElementById('matrix-canvas');
-        const mCtx = mCanvas.getContext('2d', { alpha: false }); // パフォーマンス向上
-        let mInterval;
+        const mCtx = mCanvas.getContext('2d');
+        let mRequest;
         mCanvas.width = window.innerWidth; mCanvas.height = window.innerHeight;
         const drops = Array(Math.floor(mCanvas.width/25)).fill(1);
 
-        function drawM() {
-            mCtx.fillStyle = "rgba(0, 0, 0, 0.1)";
+        function drawMatrix() {
+            mCtx.fillStyle = "rgba(0, 0, 0, 0.05)";
             mCtx.fillRect(0, 0, mCanvas.width, mCanvas.height);
             mCtx.fillStyle = "#0F0";
             mCtx.font = "15px monospace";
@@ -80,44 +80,60 @@
                 if (drops[i] * 18 > mCanvas.height && Math.random() > 0.975) drops[i] = 0;
                 drops[i]++;
             }
+            mRequest = requestAnimationFrame(drawMatrix);
         }
-        mInterval = setInterval(drawM, 60); // 速度を少し落として安定させる
+        drawMatrix();
 
-        // 2. 音声関連
+        // --- Global Audio ---
         let audioCtx;
-        function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
+        function playSnd(f, d, t="sawtooth", v=0.1) {
+            try {
+                if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+                o.type = t; o.frequency.setValueAtTime(f, audioCtx.currentTime);
+                g.gain.setValueAtTime(v, audioCtx.currentTime);
+                g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + d);
+                o.connect(g); g.connect(audioCtx.destination);
+                o.start(); o.stop(audioCtx.currentTime + d);
+            } catch(e) {}
         }
 
-        function playEffect(freq, dur, type="sawtooth", vol=0.1) {
-            if (!audioCtx) return;
-            const osc = audioCtx.createOscillator(); const g = audioCtx.createGain();
-            osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            g.gain.setValueAtTime(vol, audioCtx.currentTime);
-            g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + dur);
-            osc.connect(g); g.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + dur);
+        // --- Sequence Control ---
+        let isStarted = false;
+        function start() {
+            if(isStarted) return;
+            isStarted = true;
+
+            // 1. Matrixを即座に止める
+            cancelAnimationFrame(mRequest);
+            document.getElementById('matrix-canvas').style.display = 'none';
+            document.getElementById('guide-msg').style.display = 'none';
+
+            // 2. 音声エンジンの準備
+            if(window.speechSynthesis) window.speechSynthesis.cancel();
+            playSnd(440, 0.1, "sine", 0.05);
+
+            // 3. 次の演出へ
+            setTimeout(runCrawl, 100);
         }
 
-        // 3. メインシーケンス
-        function runMain() {
-            clearInterval(mInterval);
-            mCanvas.style.display = "none";
+        function runCrawl() {
+            const swWin = document.getElementById('sw-win');
+            const txt = document.getElementById('text-content');
+            swWin.style.visibility = 'visible';
+            txt.style.display = 'block';
+            txt.style.animation = 'crawl-animation 45s linear forwards';
 
-            const uttr = new SpeechSynthesisUtterance("このキーボックスの扉を開いた時、新しい未来への扉が開きます。さぁ未知への一歩を踏み出そう。今すぐ、QRコードをスキャンするんだ！そこには、これまでの自分ではない、未来のあなたが、笑顔で手を振って待っています。");
+            const uttr = new SpeechSynthesisUtterance(txt.innerText);
             const voices = window.speechSynthesis.getVoices();
             uttr.voice = voices.find(v => v.lang.includes("ja") && (v.name.includes("Male") || v.name.includes("Siri") || v.name.includes("Otoya"))) || voices[0];
             uttr.rate = 0.82; uttr.pitch = 0.5;
 
-            document.getElementById('sw-win').style.visibility = 'visible';
-            const txt = document.getElementById('text-content');
-            txt.style.display = 'block';
-            txt.style.animation = 'crawl-animation 45s linear forwards';
+            // 終了後の扉演出
+            uttr.onend = () => { setTimeout(showDoor, 500); };
+            // バックアップ用（音声が出ない場合も25秒で扉を出す）
+            setTimeout(() => { if(txt.style.display !== 'none') showDoor(); }, 28000);
 
-            const safety = setTimeout(showDoor, 28000);
-            uttr.onend = () => { clearTimeout(safety); setTimeout(showDoor, 800); };
             window.speechSynthesis.speak(uttr);
         }
 
@@ -125,14 +141,14 @@
             document.getElementById('sw-win').style.display = 'none';
             document.getElementById('door-wrapper').style.display = 'block';
             setTimeout(() => {
-                playEffect(55, 3.5, "sawtooth", 0.15);
+                playSnd(60, 3, "sawtooth", 0.1);
                 document.getElementById('door-leaf').style.transform = 'rotateY(-115deg)';
                 document.getElementById('final-text-logo').style.opacity = '1';
-                setTimeout(startTimeTravel, 3500);
+                setTimeout(runWarp, 3500);
             }, 1000);
         }
 
-        function startTimeTravel() {
+        function runWarp() {
             const wCanvas = document.getElementById('warp-canvas');
             const wCtx = wCanvas.getContext('2d');
             wCanvas.style.display = 'block';
@@ -140,43 +156,25 @@
             document.body.classList.add('shaking');
             
             let stars = [];
-            for(let i=0; i<200; i++) stars.push({x: Math.random()*wCanvas.width-wCanvas.width/2, y: Math.random()*wCanvas.height-wCanvas.height/2, z: Math.random()*wCanvas.width});
+            for(let i=0; i<150; i++) stars.push({x: Math.random()*wCanvas.width-wCanvas.width/2, y: Math.random()*wCanvas.height-wCanvas.height/2, z: Math.random()*wCanvas.width});
 
-            function drawWarp() {
-                wCtx.fillStyle="rgba(0,0,0,0.4)"; wCtx.fillRect(0,0,wCanvas.width,wCanvas.height);
+            function animateWarp() {
+                if(!wCanvas.style.display === 'block') return;
+                wCtx.fillStyle="rgba(0,0,0,0.3)"; wCtx.fillRect(0,0,wCanvas.width,wCanvas.height);
                 wCtx.strokeStyle="#fff"; wCtx.lineWidth=2;
                 stars.forEach(s => {
-                    s.z -= 25; if(s.z <= 0) s.z = wCanvas.width;
+                    s.z -= 20; if(s.z <= 0) s.z = wCanvas.width;
                     let x = (s.x / s.z) * wCanvas.width + wCanvas.width/2;
                     let y = (s.y / s.z) * wCanvas.height + wCanvas.height/2;
                     let x2 = (s.x / (s.z + 50)) * wCanvas.width + wCanvas.width/2;
                     let y2 = (s.y / (s.z + 50)) * wCanvas.height + wCanvas.height/2;
                     wCtx.beginPath(); wCtx.moveTo(x,y); wCtx.lineTo(x2,y2); wCtx.stroke();
                 });
-                if(document.body.classList.contains('shaking')) requestAnimationFrame(drawWarp);
+                requestAnimationFrame(animateWarp);
             }
-            drawWarp();
-            
-            playEffect(150, 4, "square", 0.05);
-            setTimeout(() => {
-                document.getElementById('white-screen').style.opacity = '1';
-                document.body.classList.remove('shaking');
-            }, 4000);
-        }
-
-        function start() {
-            if(isStarted) return;
-            isStarted = true;
-            initAudio();
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            
-            window.speechSynthesis.cancel();
-            window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
-
-            document.getElementById('guide-msg').style.display = 'none';
-            // 起動時の電子音
-            playEffect(800, 0.1, "square", 0.05); 
-            setTimeout(runMain, 500);
+            animateWarp();
+            playSnd(200, 4, "square", 0.05);
+            setTimeout(() => { document.getElementById('white-screen').style.opacity = '1'; }, 3000);
         }
     </script>
 </body>
