@@ -7,115 +7,118 @@
     <style>
         body, html { margin: 0; padding: 0; height: 100vh; background: #000; overflow: hidden; font-family: "serif"; color: #feda4a; }
 
-        /* スターウォーズ風テキスト */
+        /* スターウォーズ風テキスト（黄金色） */
         .star-wars-container {
             position: absolute; width: 100%; height: 100%;
             display: flex; justify-content: center; align-items: flex-end;
             perspective: 400px; z-index: 10;
         }
         .crawl-text {
-            font-size: 24px; font-weight: bold; text-align: center; line-height: 2;
-            transform: rotateX(25deg); animation: crawl 20s linear forwards;
+            font-size: 26px; font-weight: bold; text-align: center; line-height: 2.2;
+            transform: rotateX(25deg); animation: crawl 18s linear forwards;
+            display: none; /* 初期は非表示 */
         }
         @keyframes crawl {
             0% { transform: rotateX(25deg) translateY(100vh); opacity: 1; }
-            100% { transform: rotateX(25deg) translateY(-120vh); opacity: 0; }
+            100% { transform: rotateX(25deg) translateY(-130vh); opacity: 0; }
         }
 
-        /* 普通の扉のセット */
-        #door-frame {
+        /* 普通の扉（ユンボではありません） */
+        #door-wrapper {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 150px; height: 250px; border: 4px solid #555; background: #222;
-            display: none; perspective: 1000px; z-index: 20;
+            width: 180px; height: 280px; border: 6px solid #444; background: #111;
+            display: none; perspective: 1200px; z-index: 20;
         }
-        #door {
-            width: 100%; height: 100%; background: #5d4037; /* 木目調の茶色 */
-            border: 2px solid #3e2723; transform-origin: left;
-            transition: transform 2.5s ease-in-out;
+        #door-leaf {
+            width: 100%; height: 100%; background: #4e342e; /* 落ち着いた木の扉 */
+            border: 1px solid #331d1a; transform-origin: left;
+            transition: transform 3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex; align-items: center; justify-content: flex-end;
         }
         /* ドアノブ */
-        #door::after { content: "●"; color: #d4af37; margin-right: 10px; font-size: 20px; }
+        #door-leaf::after { content: ""; width: 15px; height: 15px; background: #d4af37; border-radius: 50%; margin-right: 15px; box-shadow: 0 0 5px rgba(0,0,0,0.5); }
 
-        /* 扉が開いた後のロゴ */
-        #final-logo {
+        /* 扉が開いた奥に見える「鍵のロゴ」 */
+        #final-key-logo {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 120px; opacity: 0; transition: opacity 2s; z-index: 5;
+            width: 100px; opacity: 0; transition: opacity 2s; z-index: 5;
         }
 
-        /* 真っ白な世界 */
-        #white-out {
+        /* 最後のホワイトアウト */
+        #white-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #fff; opacity: 0; pointer-events: none; transition: opacity 3s; z-index: 100;
+            background: #fff; opacity: 0; pointer-events: none; transition: opacity 2.5s; z-index: 100;
         }
 
-        .instruction { position: absolute; top: 20px; width: 100%; text-align: center; color: #fff; font-size: 14px; z-index: 150; }
+        #guide-msg { position: absolute; top: 50%; width: 100%; text-align: center; color: #fff; cursor: pointer; z-index: 200; font-size: 18px; }
     </style>
 </head>
-<body onclick="startSequence()">
+<body onclick="startJourney()">
 
-    <div class="instruction" id="guide">画面をクリックして扉を開く</div>
+    <div id="guide-msg">画面をクリックして、旅を始める</div>
 
-    <div id="intro" class="star-wars-container">
-        <div class="crawl-text">
+    <div id="intro-box" class="star-wars-container">
+        <div id="text-content" class="crawl-text">
             このキーボックスの扉を開いた時、<br>
             新しい未来への扉が開きます。<br><br>
-            さぁ未知の一歩を踏み出そう。<br><br>
+            さぁ未知への一歩を踏み出そう。<br><br>
             そこには、今までの自分ではない<br>
             未来の輝かしいあなたが待っています。
         </div>
     </div>
 
-    <div id="door-frame">
-        <div id="door"></div>
-        <img src="MiKey-Log.png" id="final-logo" onerror="this.src='https://avatars.githubusercontent.com/u/190809794?v=4'">
+    <div id="door-wrapper">
+        <img src="MiKey-Log.png" id="final-key-logo" onerror="this.src='https://avatars.githubusercontent.com/u/190809794?v=4'">
+        <div id="door-leaf"></div>
     </div>
 
-    <div id="white-out"></div>
+    <div id="white-screen"></div>
 
     <script>
-        let sequenceStarted = false;
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let isStarted = false;
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-        function playDoorSound() {
-            // ギィィィ…という扉の音を合成
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
+        function playCreakSound() {
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
             osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(100, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 2);
-            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 2.5);
+            // 低い「ギィィ」という音
+            osc.frequency.setValueAtTime(80, audioContext.currentTime);
+            osc.frequency.linearRampToValueAtTime(120, audioContext.currentTime + 3);
+            gain.gain.setValueAtTime(0.05, audioContext.currentTime);
+            gain.gain.linearRampToValueAtTime(0, audioContext.currentTime + 3);
             osc.connect(gain);
-            gain.connect(audioCtx.destination);
+            gain.connect(audioContext.destination);
             osc.start();
-            osc.stop(audioCtx.currentTime + 2.5);
+            osc.stop(audioContext.currentTime + 3);
         }
 
-        function startSequence() {
-            if (sequenceStarted) return;
-            sequenceStarted = true;
-            document.getElementById('guide').style.display = 'none';
-            if (audioCtx.state === 'suspended') audioCtx.resume();
+        function startJourney() {
+            if (isStarted) return;
+            isStarted = true;
+            
+            document.getElementById('guide-msg').style.display = 'none';
+            document.getElementById('text-content').style.display = 'block';
+            if (audioContext.state === 'suspended') audioContext.resume();
 
-            // 1. テキストスクロールが終わる頃に扉を出す
+            // 1. スクロールが終わるタイミングで扉を出す
             setTimeout(() => {
-                document.getElementById('intro').style.display = 'none';
-                document.getElementById('door-frame').style.display = 'block';
+                document.getElementById('intro-box').style.display = 'none';
+                document.getElementById('door-wrapper').style.display = 'block';
 
-                // 2. 扉が開く
+                // 2. 扉が開く（音とともに）
                 setTimeout(() => {
-                    playDoorSound();
-                    document.getElementById('door').style.transform = 'rotateY(-120deg)';
-                    document.getElementById('final-logo').style.opacity = '1';
+                    playCreakSound();
+                    document.getElementById('door-leaf').style.transform = 'rotateY(-110deg)';
+                    document.getElementById('final-key-logo').style.opacity = '1';
 
-                    // 3. 真っ白な世界へ
+                    // 3. 輝かしい未来（真っ白）へ
                     setTimeout(() => {
-                        document.getElementById('white-out').style.opacity = '1';
-                    }, 3000);
-                }, 1500);
+                        document.getElementById('white-screen').style.opacity = '1';
+                    }, 3500);
+                }, 2000);
 
-            }, 20000); // 20秒後に扉へ
+            }, 18500); // 文章の長さに合わせた待機時間
         }
     </script>
 </body>
