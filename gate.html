@@ -14,13 +14,13 @@
             perspective: 400px; z-index: 10;
         }
         .crawl-text {
-            font-size: 26px; font-weight: bold; text-align: center; line-height: 2.2;
-            transform: rotateX(25deg); animation: crawl 20s linear forwards;
+            font-size: 26px; font-weight: bold; text-align: center; line-height: 2.5;
+            transform: rotateX(25deg); animation: crawl 25s linear forwards;
             display: none;
         }
         @keyframes crawl {
             0% { transform: rotateX(25deg) translateY(100vh); opacity: 1; }
-            100% { transform: rotateX(25deg) translateY(-140vh); opacity: 0; }
+            100% { transform: rotateX(25deg) translateY(-150vh); opacity: 0; }
         }
 
         /* 普通の扉 */
@@ -38,28 +38,20 @@
         }
         #door-leaf::after { content: ""; width: 15px; height: 15px; background: #d4af37; border-radius: 50%; margin-right: 15px; }
 
-        /* 文字だけを囲む緑の枠と黒い文字 */
+        /* 文字ロゴ */
         #final-text-logo {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             opacity: 0; transition: opacity 2s; z-index: 5;
-            padding: 10px 20px;
-            background-color: #f0f0f0;
-            border: 5px solid #00ff00;
-            color: #000000;
-            font-size: 32px;
-            font-weight: bold;
-            white-space: nowrap;
-            border-radius: 5px;
+            padding: 10px 20px; background-color: #f0f0f0; border: 5px solid #00ff00;
+            color: #000000; font-size: 32px; font-weight: bold; white-space: nowrap; border-radius: 5px;
             box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
         }
 
-        /* 最後のホワイトアウト */
         #white-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #fff; opacity: 0; pointer-events: none; transition: opacity 2.5s; z-index: 100;
         }
 
-        /* 案内メッセージ：ここがバグの主因でした */
         #guide-msg { 
             position: absolute; top: 50%; width: 100%; text-align: center; 
             color: #fff; cursor: pointer; z-index: 200; font-size: 24px; 
@@ -94,6 +86,7 @@
         let isStarted = false;
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
+        // 扉が開く音
         function playCreakSound() {
             const osc = audioContext.createOscillator();
             const gain = audioContext.createGain();
@@ -108,16 +101,28 @@
             osc.stop(audioContext.currentTime + 3);
         }
 
+        // ★ナレーション機能★
+        function speakMessage() {
+            const text = "このキーボックスの扉を開いた時、新しい未来への扉が開きます。さぁ未知への一歩を踏み出そう。今すぐ、キューアールコードをスキャンするんだ！そこには、今までの自分ではない、未来の輝かしいあなたが、笑顔で手を差し伸べて待っています。";
+            const uttr = new SpeechSynthesisUtterance(text);
+            uttr.lang = "ja-JP";
+            uttr.rate = 0.9; // 少しゆっくりめに
+            uttr.pitch = 1.0;
+            window.speechSynthesis.speak(uttr);
+        }
+
         function startJourney() {
             if (isStarted) return;
             isStarted = true;
             
-            // 案内メッセージを消してテキストを開始
             document.getElementById('guide-msg').style.display = 'none';
             document.getElementById('text-content').style.display = 'block';
+            
+            // 音声とナレーションを開始
             if (audioContext.state === 'suspended') audioContext.resume();
+            speakMessage();
 
-            // 文章量に合わせて時間を20秒に微調整
+            // ナレーションが終わる頃に扉を出す
             setTimeout(() => {
                 document.getElementById('intro-box').style.display = 'none';
                 document.getElementById('door-wrapper').style.display = 'block';
@@ -130,10 +135,4 @@
                     setTimeout(() => {
                         document.getElementById('white-screen').style.opacity = '1';
                     }, 4000);
-                }, 2000);
-
-            }, 20000); 
-        }
-    </script>
-</body>
-</html>
+                },
