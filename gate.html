@@ -3,57 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MikeyLog - 未知への扉</title>
+    <title>MikeyLog - 究極の扉</title>
     <style>
-        body, html { 
-            margin: 0; padding: 0; height: 100vh; background: #000; overflow: hidden; 
-            font-family: "Helvetica Neue", Arial, "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif; 
-            color: #feda4a; 
-        }
+        body, html { margin: 0; padding: 0; height: 100vh; background: #000; overflow: hidden; font-family: sans-serif; color: #feda4a; }
         
+        /* マトリックス用キャンバス */
+        #matrix-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+
         #guide-msg { 
             position: absolute; top: 50%; left: 0; width: 100%; text-align: center; 
-            color: #fff; cursor: pointer; font-size: 22px; font-weight: bold; 
-            transform: translateY(-50%); z-index: 100; border: 2px solid #fff; 
-            padding: 30px 0; background: rgba(0,0,0,0.7); letter-spacing: 0.15em;
+            color: #0f0; cursor: pointer; font-size: 24px; font-weight: bold; 
+            transform: translateY(-50%); z-index: 100; border: 1px solid #0f0; 
+            padding: 40px 0; background: rgba(0,0,0,0.8); letter-spacing: 0.3em;
+            text-shadow: 0 0 10px #0f0;
         }
 
-        /* 縦画面でも文字がはみ出さない・ズレない設定 */
+        /* スターウォーズ設定 */
         .star-wars-window { 
             position: absolute; width: 100%; height: 100%; perspective: 250px; 
-            display: flex; justify-content: center; overflow: hidden;
+            display: flex; justify-content: center; z-index: 2; display: none;
         }
         .crawl-text {
-            position: absolute; width: 90%; bottom: -120%; 
-            /* iPhone縦画面用に文字サイズを可変に(vw単位) */
-            font-size: 6vw; 
+            position: absolute; width: 90%; bottom: -120%; font-size: 6vw; 
             font-weight: bold; text-align: center; line-height: 2.2;
             transform-origin: 50% 100%; transform: rotateX(20deg); 
-            display: none; text-shadow: 2px 2px 8px rgba(0,0,0,1);
+            text-shadow: 0 0 15px rgba(254, 218, 74, 0.8);
         }
-        /* PCなどの横画面では文字が大きくなりすぎないよう制限 */
-        @media screen and (min-width: 768px) {
-            .crawl-text { font-size: 32px; }
-        }
+        @media screen and (min-width: 768px) { .crawl-text { font-size: 36px; } }
+        @keyframes crawl-animation { 0% { transform: rotateX(20deg) translateY(0); } 100% { transform: rotateX(20deg) translateY(-380%); } }
 
-        @keyframes crawl-animation { 
-            0% { transform: rotateX(20deg) translateY(0); } 
-            100% { transform: rotateX(20deg) translateY(-350%); } 
-        }
-
+        /* 扉の設定 */
         #door-wrapper { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 160px; height: 260px; border: 4px solid #444; background: #111; display: none; perspective: 1000px; z-index: 50; }
-        #door-leaf { width: 100%; height: 100%; background: #4e342e; transform-origin: left; transition: transform 3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid #222; position: relative; }
-        #door-leaf::after { content: ""; width: 12px; height: 12px; background: #d4af37; border-radius: 50%; position: absolute; right: 15px; top: 50%; }
-        
-        #final-text-logo { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0; transition: opacity 2s; padding: 10px 20px; background: #eee; border: 4px solid #0f0; color: #000; font-weight: bold; font-size: 28px; white-space: nowrap; z-index: 40; box-shadow: 0 0 20px rgba(0,255,0,0.5); }
-        #white-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; opacity: 0; pointer-events: none; transition: opacity 3.5s; z-index: 999; }
+        #door-leaf { width: 100%; height: 100%; background: #4e342e; transform-origin: left; transition: transform 3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid #222; }
+        #final-text-logo { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0; transition: opacity 2s; padding: 10px 20px; background: #eee; border: 4px solid #0f0; color: #000; font-weight: bold; font-size: 28px; white-space: nowrap; z-index: 40; box-shadow: 0 0 20px rgba(0,255,0,0.8); }
+        #white-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; opacity: 0; pointer-events: none; transition: opacity 3s; z-index: 999; }
     </style>
 </head>
 <body onclick="start()">
 
-    <div id="guide-msg">【 画面をタップして旅を始める 】</div>
+    <canvas id="matrix-canvas"></canvas>
+    <div id="guide-msg">INITIALIZING SYSTEM...<br>TAP TO START</div>
 
-    <div class="star-wars-window">
+    <div class="star-wars-window" id="sw-win">
         <div id="text-content" class="crawl-text">
             このキーボックスの扉を開いた時、<br>新しい未来への扉が開きます。<br><br>
             さぁ未知への一歩を踏み出そう。<br><br>
@@ -69,6 +60,34 @@
     <div id="white-screen"></div>
 
     <script>
+        const canvas = document.getElementById('matrix-canvas');
+        const ctx = canvas.getContext('2d');
+        let matrixActive = true;
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$+-*/=%\"'#&_(),.;:?!\\|{}<>[]^~";
+        const fontSize = 16;
+        const columns = canvas.width / fontSize;
+        const drops = Array(Math.floor(columns)).fill(1);
+
+        function drawMatrix() {
+            if (!matrixActive) return;
+            ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "#0F0";
+            ctx.font = fontSize + "px monospace";
+
+            for (let i = 0; i < drops.length; i++) {
+                const text = characters.charAt(Math.floor(Math.random() * characters.length));
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                drops[i]++;
+            }
+        }
+        let matrixInterval = setInterval(drawMatrix, 35);
+
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         let isStarted = false;
 
@@ -76,42 +95,28 @@
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(70, audioCtx.currentTime); // より低く、重い音に
+            osc.frequency.setValueAtTime(70, audioCtx.currentTime);
             osc.frequency.exponentialRampToValueAtTime(110, audioCtx.currentTime + 3);
             gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 3.5);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 3.5);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 3.5);
         }
 
         function speakAndTriggerDoor() {
             const text = "このキーボックスの扉を開いた時、新しい未来への扉が開きます。さぁ未知への一歩を踏み出そう。今すぐ、QRコードをスキャンするんだ！そこには、これまでの自分ではない、未来のあなたが、笑顔で手を振って待っています。";
             const uttr = new SpeechSynthesisUtterance(text);
-            
             const voices = window.speechSynthesis.getVoices();
-            // ダンディボイス優先検索（Siri男性、Google男性、Otoyaなど）
-            const maleVoice = voices.find(v => v.lang.includes("ja") && (v.name.includes("Male") || v.name.includes("Siri") || v.name.includes("Otoya"))) ||
-                             voices.find(v => v.lang.includes("ja") && v.name.includes("Google"));
-
+            const maleVoice = voices.find(v => v.lang.includes("ja") && (v.name.includes("Male") || v.name.includes("Siri") || v.name.includes("Otoya"))) || voices.find(v => v.lang.includes("ja") && v.name.includes("Google"));
             if (maleVoice) uttr.voice = maleVoice;
-            
-            uttr.lang = "ja-JP"; 
-            uttr.rate = 0.8; // さらにゆっくり、落ち着きを
-            uttr.pitch = 0.5; // ★限界まで低くして重厚感を★
+            uttr.lang = "ja-JP"; uttr.rate = 0.8; uttr.pitch = 0.5;
 
-            uttr.onend = () => {
-                // 読み上げ終了後の余韻
-                setTimeout(showDoorSequence, 1200);
-            };
-
+            uttr.onend = () => { setTimeout(showDoorSequence, 1200); };
             window.speechSynthesis.speak(uttr);
         }
 
         function showDoorSequence() {
-            const txt = document.getElementById('text-content');
-            txt.style.display = 'none';
+            document.getElementById('sw-win').style.display = 'none';
             document.getElementById('door-wrapper').style.display = 'block';
             setTimeout(() => {
                 playDoorSound();
@@ -127,16 +132,22 @@
             if (audioCtx.state === 'suspended') audioCtx.resume();
             
             document.getElementById('guide-msg').style.display = 'none';
-            const txt = document.getElementById('text-content');
-            txt.style.display = 'block';
-            // ナレーション終了まで文字が消えないよう長めに設定(同期はJSで行う)
-            txt.style.animation = 'crawl-animation 45s linear forwards';
-
-            if (speechSynthesis.getVoices().length === 0) {
-                speechSynthesis.onvoiceschanged = speakAndTriggerDoor;
-            } else {
-                speakAndTriggerDoor();
-            }
+            
+            // マトリックスを徐々に消してスクロールへ
+            setTimeout(() => {
+                matrixActive = false;
+                canvas.style.transition = "opacity 2s";
+                canvas.style.opacity = "0";
+                document.getElementById('sw-win').style.display = 'flex';
+                document.getElementById('text-content').style.display = 'block';
+                document.getElementById('text-content').style.animation = 'crawl-animation 45s linear forwards';
+                
+                if (speechSynthesis.getVoices().length === 0) {
+                    speechSynthesis.onvoiceschanged = speakAndTriggerDoor;
+                } else {
+                    speakAndTriggerDoor();
+                }
+            }, 2000); // 2秒間マトリックスを見せてから開始
         }
     </script>
 </body>
