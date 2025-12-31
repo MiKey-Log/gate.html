@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MikeyLog - ULTIMATE STABLE</title>
+    <title>MikeyLog - FINAL JOURNEY</title>
     <style>
         body, html { margin: 0; padding: 0; height: 100vh; background: #000; overflow: hidden; font-family: sans-serif; color: #feda4a; }
         canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: block; }
@@ -33,11 +33,19 @@
 
         #door-wrapper { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 160px; height: 260px; border: 4px solid #444; background: #111; display: none; perspective: 1000px; z-index: 50; }
         #door-leaf { width: 100%; height: 100%; background: #4e342e; transform-origin: left; transition: transform 3.5s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid #222; }
-        #final-text-logo { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0; transition: opacity 2s; padding: 10px 20px; background: #eee; border: 4px solid #0f0; color: #000; font-weight: bold; font-size: 28px; white-space: nowrap; z-index: 40; box-shadow: 0 0 30px #0f0; }
+        #final-text-logo { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0; transition: opacity 2000ms; padding: 10px 20px; background: #eee; border: 4px solid #0f0; color: #000; font-weight: bold; font-size: 28px; white-space: nowrap; z-index: 40; box-shadow: 0 0 30px #0f0; }
 
         .shaking { animation: screen-shake 0.1s infinite; }
-        @keyframes screen-shake { 0% { transform: translate(2px, -2px); } 50% { transform: translate(-2px, 2px); } 100% { transform: translate(0,0); } }
-        #white-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; opacity: 0; pointer-events: none; transition: opacity 0.8s; z-index: 999; }
+        @keyframes screen-shake { 0% { transform: translate(3px, -3px); } 50% { transform: translate(-3px, 3px); } 100% { transform: translate(0,0); } }
+        
+        #white-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; opacity: 0; pointer-events: none; transition: opacity 1000ms; z-index: 999; }
+        
+        /* 最後のメッセージ用 */
+        #blessing-msg {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: #333; font-size: 32px; font-weight: bold; opacity: 0; z-index: 1000;
+            transition: opacity 2000ms; white-space: nowrap; letter-spacing: 0.2em;
+        }
     </style>
 </head>
 <body onclick="start()">
@@ -59,10 +67,12 @@
         <div id="final-text-logo">MiKey Log</div>
         <div id="door-leaf"></div>
     </div>
+    
     <div id="white-screen"></div>
+    <div id="blessing-msg">君に幸あれ！</div>
 
     <script>
-        // --- Matrix Engine (Optimized) ---
+        // --- Matrix ---
         const mCanvas = document.getElementById('matrix-canvas');
         const mCtx = mCanvas.getContext('2d');
         let mRequest;
@@ -70,10 +80,8 @@
         const drops = Array(Math.floor(mCanvas.width/25)).fill(1);
 
         function drawMatrix() {
-            mCtx.fillStyle = "rgba(0, 0, 0, 0.05)";
-            mCtx.fillRect(0, 0, mCanvas.width, mCanvas.height);
-            mCtx.fillStyle = "#0F0";
-            mCtx.font = "15px monospace";
+            mCtx.fillStyle = "rgba(0, 0, 0, 0.05)"; mCtx.fillRect(0, 0, mCanvas.width, mCanvas.height);
+            mCtx.fillStyle = "#0F0"; mCtx.font = "15px monospace";
             for (let i = 0; i < drops.length; i++) {
                 const text = Math.random() > 0.5 ? "0" : "1";
                 mCtx.fillText(text, i * 25, drops[i] * 18);
@@ -84,7 +92,7 @@
         }
         drawMatrix();
 
-        // --- Global Audio ---
+        // --- Audio ---
         let audioCtx;
         function playSnd(f, d, t="sawtooth", v=0.1) {
             try {
@@ -98,22 +106,15 @@
             } catch(e) {}
         }
 
-        // --- Sequence Control ---
+        // --- Controller ---
         let isStarted = false;
         function start() {
-            if(isStarted) return;
-            isStarted = true;
-
-            // 1. Matrixを即座に止める
+            if(isStarted) return; isStarted = true;
             cancelAnimationFrame(mRequest);
             document.getElementById('matrix-canvas').style.display = 'none';
             document.getElementById('guide-msg').style.display = 'none';
-
-            // 2. 音声エンジンの準備
             if(window.speechSynthesis) window.speechSynthesis.cancel();
             playSnd(440, 0.1, "sine", 0.05);
-
-            // 3. 次の演出へ
             setTimeout(runCrawl, 100);
         }
 
@@ -128,11 +129,11 @@
             const voices = window.speechSynthesis.getVoices();
             uttr.voice = voices.find(v => v.lang.includes("ja") && (v.name.includes("Male") || v.name.includes("Siri") || v.name.includes("Otoya"))) || voices[0];
             uttr.rate = 0.82; uttr.pitch = 0.5;
-
-            // 終了後の扉演出
             uttr.onend = () => { setTimeout(showDoor, 500); };
-            // バックアップ用（音声が出ない場合も25秒で扉を出す）
-            setTimeout(() => { if(txt.style.display !== 'none') showDoor(); }, 28000);
+            
+            // 安全策：読み上げが終わらなくても一定時間で進む
+            let safetyCalled = false;
+            setTimeout(() => { if(!safetyCalled) { safetyCalled=true; showDoor(); } }, 30000);
 
             window.speechSynthesis.speak(uttr);
         }
@@ -148,6 +149,7 @@
             }, 1000);
         }
 
+        let wRequest;
         function runWarp() {
             const wCanvas = document.getElementById('warp-canvas');
             const wCtx = wCanvas.getContext('2d');
@@ -159,22 +161,32 @@
             for(let i=0; i<150; i++) stars.push({x: Math.random()*wCanvas.width-wCanvas.width/2, y: Math.random()*wCanvas.height-wCanvas.height/2, z: Math.random()*wCanvas.width});
 
             function animateWarp() {
-                if(!wCanvas.style.display === 'block') return;
                 wCtx.fillStyle="rgba(0,0,0,0.3)"; wCtx.fillRect(0,0,wCanvas.width,wCanvas.height);
                 wCtx.strokeStyle="#fff"; wCtx.lineWidth=2;
                 stars.forEach(s => {
-                    s.z -= 20; if(s.z <= 0) s.z = wCanvas.width;
+                    s.z -= 25; if(s.z <= 0) s.z = wCanvas.width;
                     let x = (s.x / s.z) * wCanvas.width + wCanvas.width/2;
                     let y = (s.y / s.z) * wCanvas.height + wCanvas.height/2;
                     let x2 = (s.x / (s.z + 50)) * wCanvas.width + wCanvas.width/2;
                     let y2 = (s.y / (s.z + 50)) * wCanvas.height + wCanvas.height/2;
                     wCtx.beginPath(); wCtx.moveTo(x,y); wCtx.lineTo(x2,y2); wCtx.stroke();
                 });
-                requestAnimationFrame(animateWarp);
+                wRequest = requestAnimationFrame(animateWarp);
             }
             animateWarp();
-            playSnd(200, 4, "square", 0.05);
-            setTimeout(() => { document.getElementById('white-screen').style.opacity = '1'; }, 3000);
+            playSnd(180, 4, "square", 0.05);
+
+            // 3秒後にホワイトアウト開始
+            setTimeout(() => {
+                document.getElementById('white-screen').style.opacity = '1';
+                // 揺れを止め、ワープ描画も止める
+                setTimeout(() => {
+                    document.body.classList.remove('shaking');
+                    cancelAnimationFrame(wRequest);
+                    // 最後に幸あれを表示
+                    document.getElementById('blessing-msg').style.opacity = '1';
+                }, 1000);
+            }, 3000);
         }
     </script>
 </body>
