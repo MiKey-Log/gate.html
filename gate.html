@@ -20,7 +20,7 @@
         }
         @keyframes crawl {
             0% { transform: rotateX(25deg) translateY(100vh); opacity: 1; }
-            100% { transform: rotateX(25deg) translateY(-150vh); opacity: 0; }
+            100% { transform: rotateX(25deg) translateY(-160vh); opacity: 0; }
         }
 
         /* 普通の扉 */
@@ -38,7 +38,7 @@
         }
         #door-leaf::after { content: ""; width: 15px; height: 15px; background: #d4af37; border-radius: 50%; margin-right: 15px; }
 
-        /* 文字ロゴ */
+        /* 文字ロゴ（緑枠・黒文字） */
         #final-text-logo {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             opacity: 0; transition: opacity 2s; z-index: 5;
@@ -47,11 +47,13 @@
             box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
         }
 
+        /* 最後のホワイトアウト */
         #white-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #fff; opacity: 0; pointer-events: none; transition: opacity 2.5s; z-index: 100;
         }
 
+        /* 最初の案内メッセージ */
         #guide-msg { 
             position: absolute; top: 50%; width: 100%; text-align: center; 
             color: #fff; cursor: pointer; z-index: 200; font-size: 24px; 
@@ -84,30 +86,13 @@
 
     <script>
         let isStarted = false;
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-        // 扉が開く音
-        function playCreakSound() {
-            const osc = audioContext.createOscillator();
-            const gain = audioContext.createGain();
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(80, audioContext.currentTime);
-            osc.frequency.linearRampToValueAtTime(120, audioContext.currentTime + 3);
-            gain.gain.setValueAtTime(0.05, audioContext.currentTime);
-            gain.gain.linearRampToValueAtTime(0, audioContext.currentTime + 3);
-            osc.connect(gain);
-            gain.connect(audioContext.destination);
-            osc.start();
-            osc.stop(audioContext.currentTime + 3);
-        }
-
-        // ★ナレーション機能★
+        // ナレーション機能
         function speakMessage() {
-            const text = "このキーボックスの扉を開いた時、新しい未来への扉が開きます。さぁ未知への一歩を踏み出そう。今すぐ、キューアールコードをスキャンするんだ！そこには、今までの自分ではない、未来の輝かしいあなたが、笑顔で手を差し伸べて待っています。";
+            const text = "このキーボックスの扉を開いた時、新しい未来への扉が開きます。さぁ未知への一歩を踏み出そう。今すぐ、QRコードをスキャンするんだ！そこには、今までの自分ではない、未来の輝かしいあなたが、笑顔で手を差し伸べて待っています。";
             const uttr = new SpeechSynthesisUtterance(text);
             uttr.lang = "ja-JP";
-            uttr.rate = 0.9; // 少しゆっくりめに
-            uttr.pitch = 1.0;
+            uttr.rate = 0.9;
             window.speechSynthesis.speak(uttr);
         }
 
@@ -115,24 +100,19 @@
             if (isStarted) return;
             isStarted = true;
             
+            // 案内を消してテキストを表示
             document.getElementById('guide-msg').style.display = 'none';
             document.getElementById('text-content').style.display = 'block';
             
-            // 音声とナレーションを開始
-            if (audioContext.state === 'suspended') audioContext.resume();
+            // ナレーション開始
             speakMessage();
 
-            // ナレーションが終わる頃に扉を出す
+            // 23秒後に扉を登場させる（ナレーションと同期）
             setTimeout(() => {
                 document.getElementById('intro-box').style.display = 'none';
                 document.getElementById('door-wrapper').style.display = 'block';
 
                 setTimeout(() => {
-                    playCreakSound();
+                    // 扉が開く動作
                     document.getElementById('door-leaf').style.transform = 'rotateY(-110deg)';
                     document.getElementById('final-text-logo').style.opacity = '1';
-
-                    setTimeout(() => {
-                        document.getElementById('white-screen').style.opacity = '1';
-                    }, 4000);
-                },
