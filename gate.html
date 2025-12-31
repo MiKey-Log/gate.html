@@ -10,29 +10,48 @@
             font-family: "Helvetica Neue", Arial, "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif; 
             color: #feda4a; 
         }
+        
         #guide-msg { 
             position: absolute; top: 50%; left: 0; width: 100%; text-align: center; 
-            color: #fff; cursor: pointer; font-size: 24px; font-weight: bold; 
+            color: #fff; cursor: pointer; font-size: 22px; font-weight: bold; 
             transform: translateY(-50%); z-index: 100; border: 2px solid #fff; 
-            padding: 20px 0; background: rgba(0,0,0,0.5); letter-spacing: 0.1em;
+            padding: 30px 0; background: rgba(0,0,0,0.7); letter-spacing: 0.15em;
         }
-        .star-wars-window { position: absolute; width: 100%; height: 100%; perspective: 300px; display: flex; justify-content: center; }
-        .crawl-text {
-            position: absolute; width: 85%; bottom: -110%; font-size: 32px; font-weight: bold; text-align: center; line-height: 2.5;
-            transform-origin: 50% 100%; transform: rotateX(25deg); display: none; text-shadow: 2px 2px 5px rgba(0,0,0,0.8);
-        }
-        @keyframes crawl-animation { 0% { transform: rotateX(25deg) translateY(0); } 100% { transform: rotateX(25deg) translateY(-280%); } }
 
-        #door-wrapper { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 180px; height: 280px; border: 4px solid #444; background: #111; display: none; perspective: 1000px; z-index: 50; }
+        /* 縦画面でも文字がはみ出さない・ズレない設定 */
+        .star-wars-window { 
+            position: absolute; width: 100%; height: 100%; perspective: 250px; 
+            display: flex; justify-content: center; overflow: hidden;
+        }
+        .crawl-text {
+            position: absolute; width: 90%; bottom: -120%; 
+            /* iPhone縦画面用に文字サイズを可変に(vw単位) */
+            font-size: 6vw; 
+            font-weight: bold; text-align: center; line-height: 2.2;
+            transform-origin: 50% 100%; transform: rotateX(20deg); 
+            display: none; text-shadow: 2px 2px 8px rgba(0,0,0,1);
+        }
+        /* PCなどの横画面では文字が大きくなりすぎないよう制限 */
+        @media screen and (min-width: 768px) {
+            .crawl-text { font-size: 32px; }
+        }
+
+        @keyframes crawl-animation { 
+            0% { transform: rotateX(20deg) translateY(0); } 
+            100% { transform: rotateX(20deg) translateY(-350%); } 
+        }
+
+        #door-wrapper { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 160px; height: 260px; border: 4px solid #444; background: #111; display: none; perspective: 1000px; z-index: 50; }
         #door-leaf { width: 100%; height: 100%; background: #4e342e; transform-origin: left; transition: transform 3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid #222; position: relative; }
-        #door-leaf::after { content: ""; width: 15px; height: 15px; background: #d4af37; border-radius: 50%; position: absolute; right: 15px; top: 50%; box-shadow: 0 0 5px #000; }
-        #final-text-logo { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0; transition: opacity 2s; padding: 10px 20px; background: #eee; border: 5px solid #0f0; color: #000; font-weight: bold; font-size: 32px; white-space: nowrap; z-index: 40; box-shadow: 0 0 20px rgba(0,255,0,0.5); }
-        #white-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; opacity: 0; pointer-events: none; transition: opacity 3s; z-index: 999; }
+        #door-leaf::after { content: ""; width: 12px; height: 12px; background: #d4af37; border-radius: 50%; position: absolute; right: 15px; top: 50%; }
+        
+        #final-text-logo { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0; transition: opacity 2s; padding: 10px 20px; background: #eee; border: 4px solid #0f0; color: #000; font-weight: bold; font-size: 28px; white-space: nowrap; z-index: 40; box-shadow: 0 0 20px rgba(0,255,0,0.5); }
+        #white-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; opacity: 0; pointer-events: none; transition: opacity 3.5s; z-index: 999; }
     </style>
 </head>
 <body onclick="start()">
 
-    <div id="guide-msg">【 画面をタップして扉を開く 】</div>
+    <div id="guide-msg">【 画面をタップして旅を始める 】</div>
 
     <div class="star-wars-window">
         <div id="text-content" class="crawl-text">
@@ -57,35 +76,34 @@
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(85, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(130, audioCtx.currentTime + 2.5);
-            gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 3);
+            osc.frequency.setValueAtTime(70, audioCtx.currentTime); // より低く、重い音に
+            osc.frequency.exponentialRampToValueAtTime(110, audioCtx.currentTime + 3);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 3.5);
             osc.connect(gain);
             gain.connect(audioCtx.destination);
             osc.start();
-            osc.stop(audioCtx.currentTime + 3);
+            osc.stop(audioCtx.currentTime + 3.5);
         }
 
         function speakAndTriggerDoor() {
             const text = "このキーボックスの扉を開いた時、新しい未来への扉が開きます。さぁ未知への一歩を踏み出そう。今すぐ、QRコードをスキャンするんだ！そこには、これまでの自分ではない、未来のあなたが、笑顔で手を振って待っています。";
             const uttr = new SpeechSynthesisUtterance(text);
             
-            // ダンディな声を探すロジック
             const voices = window.speechSynthesis.getVoices();
-            // 優先順位：Googleの男性声 ＞ iPhoneの男性声(Otoyaなど) ＞ 明示的なMale設定
-            const maleVoice = voices.find(v => v.lang.includes("ja") && (v.name.includes("Google") && v.name.includes("Male"))) ||
-                             voices.find(v => v.lang.includes("ja") && (v.name.includes("Otoya") || v.name.includes("Siri"))) ||
-                             voices.find(v => v.lang.includes("ja") && v.name.includes("Male"));
+            // ダンディボイス優先検索（Siri男性、Google男性、Otoyaなど）
+            const maleVoice = voices.find(v => v.lang.includes("ja") && (v.name.includes("Male") || v.name.includes("Siri") || v.name.includes("Otoya"))) ||
+                             voices.find(v => v.lang.includes("ja") && v.name.includes("Google"));
 
             if (maleVoice) uttr.voice = maleVoice;
             
             uttr.lang = "ja-JP"; 
-            uttr.rate = 0.82; // 少し重厚感を出すためにさらにゆっくり
-            uttr.pitch = 0.6; // ★ここをさらに下げてダンディな低音に★
+            uttr.rate = 0.8; // さらにゆっくり、落ち着きを
+            uttr.pitch = 0.5; // ★限界まで低くして重厚感を★
 
             uttr.onend = () => {
-                setTimeout(showDoorSequence, 800);
+                // 読み上げ終了後の余韻
+                setTimeout(showDoorSequence, 1200);
             };
 
             window.speechSynthesis.speak(uttr);
@@ -97,9 +115,9 @@
             document.getElementById('door-wrapper').style.display = 'block';
             setTimeout(() => {
                 playDoorSound();
-                document.getElementById('door-leaf').style.transform = 'rotateY(-115deg)';
+                document.getElementById('door-leaf').style.transform = 'rotateY(-120deg)';
                 document.getElementById('final-text-logo').style.opacity = '1';
-                setTimeout(() => { document.getElementById('white-screen').style.opacity = '1'; }, 4500);
+                setTimeout(() => { document.getElementById('white-screen').style.opacity = '1'; }, 5000);
             }, 1000);
         }
 
@@ -107,10 +125,12 @@
             if(isStarted) return;
             isStarted = true;
             if (audioCtx.state === 'suspended') audioCtx.resume();
+            
             document.getElementById('guide-msg').style.display = 'none';
             const txt = document.getElementById('text-content');
             txt.style.display = 'block';
-            txt.style.animation = 'crawl-animation 40s linear forwards';
+            // ナレーション終了まで文字が消えないよう長めに設定(同期はJSで行う)
+            txt.style.animation = 'crawl-animation 45s linear forwards';
 
             if (speechSynthesis.getVoices().length === 0) {
                 speechSynthesis.onvoiceschanged = speakAndTriggerDoor;
