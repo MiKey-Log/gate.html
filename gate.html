@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MikeyLog - PERFECT SYNC</title>
+    <title>MikeyLog - ETERNAL BLESSING</title>
     <style>
         body, html { margin: 0; padding: 0; height: 100vh; background: #000; overflow: hidden; font-family: sans-serif; color: #feda4a; }
         canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
@@ -36,8 +36,8 @@
         #white-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; opacity: 0; pointer-events: none; transition: opacity 1s; z-index: 999; }
         #blessing-msg {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            color: #333; font-size: 32px; font-weight: bold; opacity: 0; z-index: 1000;
-            transition: opacity 2s; white-space: nowrap;
+            color: #444; font-size: 36px; font-weight: bold; opacity: 0; z-index: 1000;
+            transition: opacity 3s; white-space: nowrap; letter-spacing: 0.1em;
         }
     </style>
 </head>
@@ -69,7 +69,7 @@
         let isStarted = false;
         let mReq, wReq;
 
-        // --- Matrix Engine ---
+        // Matrix
         const mCanvas = document.getElementById('matrix-canvas');
         const mCtx = mCanvas.getContext('2d');
         mCanvas.width = window.innerWidth; mCanvas.height = window.innerHeight;
@@ -85,18 +85,33 @@
         }
         drawM();
 
-        // --- Clean Audio Engine ---
-        function playSnd(f, d, t="sawtooth", v=0.1) {
+        // Audio Engine
+        function playSnd(f, d, t="sawtooth", v=0.1, fade=true) {
             if(!audioCtx) return;
             const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
             o.type = t; o.frequency.setValueAtTime(f, audioCtx.currentTime);
             g.gain.setValueAtTime(v, audioCtx.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + d);
+            if(fade) g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + d);
             o.connect(g); g.connect(audioCtx.destination);
             o.start(); o.stop(audioCtx.currentTime + d);
         }
 
-        // --- Start Controller ---
+        // 祝福のメロディ（穏やかな和音）
+        function playBlessingChord() {
+            // Cメジャー的な明るい和音を時間差で鳴らす
+            const now = audioCtx.currentTime;
+            [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+                const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+                o.type = "sine"; // 穏やかなサイン波
+                o.frequency.setValueAtTime(freq, now + i*0.5);
+                g.gain.setValueAtTime(0, now + i*0.5);
+                g.gain.linearRampToValueAtTime(0.05, now + i*0.5 + 1.5);
+                g.gain.linearRampToValueAtTime(0, now + i*0.5 + 6);
+                o.connect(g); g.connect(audioCtx.destination);
+                o.start(now + i*0.5); o.stop(now + i*0.5 + 7);
+            });
+        }
+
         function start() {
             if(isStarted) return; isStarted = true;
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -104,35 +119,29 @@
             document.getElementById('matrix-canvas').style.display = 'none';
             document.getElementById('guide-msg').style.display = 'none';
             window.speechSynthesis.cancel();
+            playSnd(440, 0.1, "sine", 0.05);
             setTimeout(runCrawl, 100);
         }
 
         function runCrawl() {
             const swWin = document.getElementById('sw-win');
             const txt = document.getElementById('text-content');
-            swWin.style.visibility = 'visible';
-            txt.style.display = 'block';
-
+            swWin.style.visibility = 'visible'; txt.style.display = 'block';
             const uttr = new SpeechSynthesisUtterance(txt.innerText);
             const voices = window.speechSynthesis.getVoices();
             uttr.voice = voices.find(v => v.lang.includes("ja") && (v.name.includes("Male") || v.name.includes("Siri"))) || voices[0];
             uttr.rate = 0.85; 
 
-            // 【PC/iPhone同期対策】CSSアニメではなくJSでスクロールさせる
             let startTime = null;
-            const duration = 28000; // 読み上げ想定時間
             function scrollStep(timestamp) {
                 if (!startTime) startTime = timestamp;
-                const progress = (timestamp - startTime) / duration;
-                const move = progress * -180; // 上昇量
-                txt.style.transform = `rotateX(25deg) translateY(${move}%)`;
+                const progress = (timestamp - startTime) / 28000;
+                txt.style.transform = `rotateX(25deg) translateY(${progress * -180}%)`;
                 if (progress < 1 && isStarted) requestAnimationFrame(scrollStep);
             }
             requestAnimationFrame(scrollStep);
-
             uttr.onend = () => { setTimeout(showDoor, 1000); };
             window.speechSynthesis.speak(uttr);
-            // バックアップ用
             setTimeout(() => { if(swWin.style.display !== 'none') showDoor(); }, 30000);
         }
 
@@ -153,10 +162,8 @@
             wCanvas.style.display = 'block';
             wCanvas.width = window.innerWidth; wCanvas.height = window.innerHeight;
             document.body.classList.add('shaking');
-            
             let stars = [];
             for(let i=0; i<150; i++) stars.push({x: Math.random()*wCanvas.width-wCanvas.width/2, y: Math.random()*wCanvas.height-wCanvas.height/2, z: Math.random()*wCanvas.width});
-
             function animateWarp() {
                 wCtx.fillStyle="rgba(0,0,0,0.3)"; wCtx.fillRect(0,0,wCanvas.width,wCanvas.height);
                 wCtx.strokeStyle="#fff"; wCtx.lineWidth=2;
@@ -174,14 +181,13 @@
             playSnd(180, 4, "square", 0.05);
 
             setTimeout(() => {
-                // 【完全終了処理】
                 document.getElementById('white-screen').style.opacity = '1';
                 setTimeout(() => {
                     document.body.classList.remove('shaking');
-                    cancelAnimationFrame(wReq); // 描画を止める
-                    wCanvas.style.display = 'none'; // Canvasを消す
-                    // 音声コンテキストも閉じる（ノイズ防止）
-                    if(audioCtx) audioCtx.close(); 
+                    cancelAnimationFrame(wReq);
+                    wCanvas.style.display = 'none';
+                    // ここで祝福の音を鳴らす
+                    playBlessingChord();
                     document.getElementById('blessing-msg').style.opacity = '1';
                 }, 1000);
             }, 3000);
