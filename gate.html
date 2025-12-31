@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MikeyLog - TIME TRAVEL</title>
+    <title>MikeyLog - THE EVOLUTION</title>
     <style>
-        body, html { margin: 0; padding: 0; height: 100vh; background: #000; overflow: hidden; font-family: sans-serif; color: #feda4a; }
+        body, html { margin: 0; padding: 0; height: 100vh; background: #000; overflow: hidden; font-family: 'Courier New', Courier, monospace; color: #feda4a; }
         canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         #matrix-canvas { z-index: 1; }
         #warp-canvas { z-index: 60; display: none; }
@@ -13,25 +13,34 @@
         #guide-msg { 
             position: absolute; top: 50%; left: 0; width: 100%; text-align: center; 
             color: #0f0; cursor: pointer; font-size: 24px; font-weight: bold; 
-            transform: translateY(-50%); z-index: 100; border: 1px solid #0f0; 
+            transform: translateY(-50%); z-index: 100; border: 2px solid #0f0; 
             padding: 40px 0; background: rgba(0,0,0,0.8); letter-spacing: 0.3em;
-            text-shadow: 0 0 10px #0f0;
+            text-shadow: 0 0 15px #0f0; box-shadow: inset 0 0 20px #0f0;
+            animation: pulse 2s infinite;
         }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
         .star-wars-window { position: absolute; width: 100%; height: 100%; perspective: 250px; display: flex; justify-content: center; z-index: 2; visibility: hidden; }
         .crawl-text {
-            position: absolute; width: 90%; bottom: -120%; font-size: 6vw; 
+            position: absolute; width: 85%; bottom: -120%; font-size: 6vw; 
             font-weight: bold; text-align: center; line-height: 2.2;
             transform-origin: 50% 100%; transform: rotateX(20deg); 
-            text-shadow: 0 0 15px rgba(254, 218, 74, 0.8);
+            text-shadow: 0 0 15px rgba(254, 218, 74, 0.9);
         }
-        @media screen and (min-width: 768px) { .crawl-text { font-size: 32px; } }
-        @keyframes crawl-animation { 0% { transform: rotateX(20deg) translateY(0); } 100% { transform: rotateX(20deg) translateY(-400%); } }
+        @media screen and (min-width: 768px) { .crawl-text { font-size: 34px; } }
+        @keyframes crawl-animation { 0% { transform: rotateX(20deg) translateY(0); } 100% { transform: rotateX(20deg) translateY(-420%); } }
 
         #door-wrapper { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 160px; height: 260px; border: 4px solid #444; background: #111; display: none; perspective: 1000px; z-index: 50; }
-        #door-leaf { width: 100%; height: 100%; background: #4e342e; transform-origin: left; transition: transform 3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid #222; }
-        #final-text-logo { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0; transition: opacity 2s; padding: 10px 20px; background: #eee; border: 4px solid #0f0; color: #000; font-weight: bold; font-size: 28px; white-space: nowrap; z-index: 40; box-shadow: 0 0 20px rgba(0,255,0,0.8); }
-        #white-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; opacity: 0; pointer-events: none; transition: opacity 0.8s; z-index: 999; }
+        #door-leaf { width: 100%; height: 100%; background: #4e342e; transform-origin: left; transition: transform 3.5s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid #222; }
+        #final-text-logo { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0; transition: opacity 2s; padding: 10px 20px; background: #eee; border: 4px solid #0f0; color: #000; font-weight: bold; font-size: 28px; white-space: nowrap; z-index: 40; box-shadow: 0 0 30px #0f0; }
+
+        /* 画面揺らし演出 */
+        @keyframes screen-shake {
+            0% { transform: translate(0,0); } 25% { transform: translate(5px, -5px); } 50% { transform: translate(-5px, 5px); } 75% { transform: translate(5px, 5px); } 100% { transform: translate(0,0); }
+        }
+        .shaking { animation: screen-shake 0.1s infinite; }
+
+        #white-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; opacity: 0; pointer-events: none; transition: opacity 0.4s ease-in; z-index: 999; }
     </style>
 </head>
 <body onclick="start()">
@@ -39,7 +48,7 @@
     <canvas id="matrix-canvas"></canvas>
     <canvas id="warp-canvas"></canvas>
     
-    <div id="guide-msg">INITIALIZING...<br>TAP TO START</div>
+    <div id="guide-msg">ACCESSING SYSTEM...<br>TAP TO AUTHORIZE</div>
 
     <div class="star-wars-window" id="sw-win">
         <div id="text-content" class="crawl-text">
@@ -57,6 +66,9 @@
     <div id="white-screen"></div>
 
     <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let isStarted = false;
+
         // --- Matrix Control ---
         const mCanvas = document.getElementById('matrix-canvas');
         const mCtx = mCanvas.getContext('2d');
@@ -65,108 +77,119 @@
         const drops = Array(Math.floor(mCanvas.width/20)).fill(1);
 
         function drawM() {
-            mCtx.fillStyle="rgba(0,0,0,0.05)"; mCtx.fillRect(0,0,mCanvas.width,mCanvas.height);
+            mCtx.fillStyle="rgba(0,0,0,0.08)"; mCtx.fillRect(0,0,mCanvas.width,mCanvas.height);
             mCtx.fillStyle="#0F0"; mCtx.font="15px monospace";
             drops.forEach((y,i)=>{
-                const text = Math.floor(Math.random()*2);
-                mCtx.fillText(text, i*20, y*15);
-                if(y*15>mCanvas.height && Math.random()>0.975) drops[i]=0; drops[i]++;
+                const text = String.fromCharCode(0x30A0 + Math.random() * 96);
+                mCtx.fillText(text, i*20, y*18);
+                if(y*18 > mCanvas.height && Math.random() > 0.98) drops[i]=0; drops[i]++;
             });
         }
-        mInterval = setInterval(drawM, 50);
+        mInterval = setInterval(drawM, 40);
 
-        // --- Warp Logic ---
+        // --- Sound Engine ---
+        function playEffect(freq, dur, type="sawtooth", vol=0.1, slide=1.5) {
+            const osc = audioCtx.createOscillator(); const g = audioCtx.createGain();
+            osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(freq * slide, audioCtx.currentTime + dur);
+            g.gain.setValueAtTime(vol, audioCtx.currentTime);
+            g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + dur);
+            osc.connect(g); g.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + dur);
+        }
+
+        function playMatrixSound() {
+            // 電子音ノイズ
+            const itv = setInterval(() => {
+                if(!isStarted || !mInterval) clearInterval(itv);
+                playEffect(Math.random()*400+400, 0.05, "square", 0.02, 0.5);
+            }, 150);
+        }
+        playMatrixSound(); // 初期状態で音を流す準備
+
+        // --- Warp Logic (Advanced) ---
         const wCanvas = document.getElementById('warp-canvas');
         const wCtx = wCanvas.getContext('2d');
-        let wAnimationId;
         let stars = [];
         function initStars() {
             wCanvas.width = window.innerWidth; wCanvas.height = window.innerHeight;
-            for(let i=0; i<150; i++) stars.push({x: Math.random()*wCanvas.width-wCanvas.width/2, y: Math.random()*wCanvas.height-wCanvas.height/2, z: Math.random()*wCanvas.width});
+            for(let i=0; i<300; i++) stars.push({x: Math.random()*wCanvas.width-wCanvas.width/2, y: Math.random()*wCanvas.height-wCanvas.height/2, z: Math.random()*wCanvas.width, w: Math.random()*3+1});
         }
         function drawWarp() {
-            wCtx.fillStyle="rgba(0,0,0,0.3)"; wCtx.fillRect(0,0,wCanvas.width,wCanvas.height);
-            wCtx.strokeStyle="#fff"; wCtx.lineWidth = 2;
+            wCtx.fillStyle="rgba(0,0,0,0.4)"; wCtx.fillRect(0,0,wCanvas.width,wCanvas.height);
             stars.forEach(s => {
-                s.z -= 20; 
+                s.z -= 25; // 超加速
                 if(s.z <= 0) s.z = wCanvas.width;
                 let x = (s.x / s.z) * wCanvas.width + wCanvas.width/2;
                 let y = (s.y / s.z) * wCanvas.height + wCanvas.height/2;
-                let x2 = (s.x / (s.z + 40)) * wCanvas.width + wCanvas.width/2;
-                let y2 = (s.y / (s.z + 40)) * wCanvas.height + wCanvas.height/2;
+                let x2 = (s.x / (s.z + 60)) * wCanvas.width + wCanvas.width/2;
+                let y2 = (s.y / (s.z + 60)) * wCanvas.height + wCanvas.height/2;
+                
+                wCtx.strokeStyle = `rgba(200, 230, 255, ${1 - s.z/wCanvas.width})`;
+                wCtx.lineWidth = s.w;
                 wCtx.beginPath(); wCtx.moveTo(x,y); wCtx.lineTo(x2,y2); wCtx.stroke();
             });
-            wAnimationId = requestAnimationFrame(drawWarp);
+            requestAnimationFrame(drawWarp);
         }
 
-        // --- Core Engine ---
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        let isStarted = false;
-
-        function playTone(freq, dur, type="sawtooth", vol=0.1) {
-            try {
-                const osc = audioCtx.createOscillator(); const g = audioCtx.createGain();
-                osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-                g.gain.setValueAtTime(vol, audioCtx.currentTime);
-                g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
-                osc.connect(g); g.connect(audioCtx.destination);
-                osc.start(); osc.stop(audioCtx.currentTime + dur);
-            } catch(e) {}
-        }
-
-        function runMainSequence() {
-            // Matrix停止 (負荷軽減)
+        // --- Sequence ---
+        function runMain() {
             clearInterval(mInterval);
             mCanvas.style.display = "none";
+            playEffect(200, 1, "sine", 0.2, 0.1); // システム停止音
 
-            const uttr = new SpeechSynthesisUtterance("このキーボックスの扉を開いた時、新しい未来への扉が開きます。さぁ未知への一歩を踏み出そう。今すぐ、QRコードをスキャンするんだ！そこには、これまでの自分ではない、未来のあなたが、笑顔で手を振って待っています。");
+            const uttr = new SpeechSynthesisUtterance(document.getElementById('text-content').innerText);
             const voices = window.speechSynthesis.getVoices();
             uttr.voice = voices.find(v => v.lang.includes("ja") && (v.name.includes("Male") || v.name.includes("Siri") || v.name.includes("Otoya"))) || voices[0];
             uttr.rate = 0.8; uttr.pitch = 0.5;
 
-            // スクロール開始
             document.getElementById('sw-win').style.visibility = 'visible';
             document.getElementById('text-content').style.display = 'block';
             document.getElementById('text-content').style.animation = 'crawl-animation 45s linear forwards';
 
-            const safetyTimer = setTimeout(showDoor, 28000);
-            uttr.onend = () => { clearTimeout(safetyTimer); setTimeout(showDoor, 1000); };
+            const safety = setTimeout(showDoor, 28000);
+            uttr.onend = () => { clearTimeout(safety); setTimeout(showDoor, 800); };
             window.speechSynthesis.speak(uttr);
         }
 
         function showDoor() {
             document.getElementById('sw-win').style.display = 'none';
-            const dw = document.getElementById('door-wrapper');
-            dw.style.display = 'block';
+            document.getElementById('door-wrapper').style.display = 'block';
             setTimeout(() => {
-                playTone(60, 3, "sawtooth", 0.1); // 扉の音
-                document.getElementById('door-leaf').style.transform = 'rotateY(-120deg)';
+                playEffect(55, 3.5, "sawtooth", 0.15, 2); // 扉の重低音
+                document.getElementById('door-leaf').style.transform = 'rotateY(-115deg)';
                 document.getElementById('final-text-logo').style.opacity = '1';
-                setTimeout(startTimeTravel, 3000);
+                setTimeout(startTimeTravel, 3500);
             }, 1000);
         }
 
         function startTimeTravel() {
             wCanvas.style.display = 'block';
+            document.body.classList.add('shaking'); // 激震
             initStars();
             drawWarp();
-            playTone(150, 4, "square", 0.05); // 加速音
+            
+            // 加速サウンド
+            let f = 100;
+            const engine = setInterval(() => {
+                f += 20;
+                playEffect(f, 0.1, "square", 0.05, 1.1);
+                if(f > 1200) clearInterval(engine);
+            }, 100);
+
             setTimeout(() => {
                 document.getElementById('white-screen').style.opacity = '1';
-            }, 3500);
+                document.body.classList.remove('shaking');
+            }, 4000);
         }
 
         function start() {
             if(isStarted) return; isStarted = true;
             if (audioCtx.state === 'suspended') audioCtx.resume();
-            
-            // iPhone音声初期化
             window.speechSynthesis.cancel();
-            const w = new SpeechSynthesisUtterance("");
-            window.speechSynthesis.speak(w);
-
+            window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
             document.getElementById('guide-msg').style.display = 'none';
-            setTimeout(runMainSequence, 500);
+            setTimeout(runMain, 600);
         }
     </script>
 </body>
