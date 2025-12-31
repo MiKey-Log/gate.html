@@ -15,12 +15,12 @@
         }
         .crawl-text {
             font-size: 26px; font-weight: bold; text-align: center; line-height: 2.2;
-            transform: rotateX(25deg); animation: crawl 18s linear forwards;
+            transform: rotateX(25deg); animation: crawl 20s linear forwards;
             display: none;
         }
         @keyframes crawl {
             0% { transform: rotateX(25deg) translateY(100vh); opacity: 1; }
-            100% { transform: rotateX(25deg) translateY(-130vh); opacity: 0; }
+            100% { transform: rotateX(25deg) translateY(-140vh); opacity: 0; }
         }
 
         /* 普通の扉 */
@@ -38,21 +38,19 @@
         }
         #door-leaf::after { content: ""; width: 15px; height: 15px; background: #d4af37; border-radius: 50%; margin-right: 15px; }
 
-        /* ★修正ポイント：文字だけを囲む緑の枠と黒い文字★ */
+        /* 文字だけを囲む緑の枠と黒い文字 */
         #final-text-logo {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             opacity: 0; transition: opacity 2s; z-index: 5;
-            
-            /* 文字の装飾 */
             padding: 10px 20px;
-            background-color: #f0f0f0; /* 文字を引き立たせるための薄い背景 */
-            border: 5px solid #00ff00; /* インパクトのある緑色の枠 */
-            color: #000000;             /* 真っ黒な文字 */
+            background-color: #f0f0f0;
+            border: 5px solid #00ff00;
+            color: #000000;
             font-size: 32px;
             font-weight: bold;
             white-space: nowrap;
             border-radius: 5px;
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5); /* 枠を少し光らせる */
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
         }
 
         /* 最後のホワイトアウト */
@@ -61,12 +59,17 @@
             background: #fff; opacity: 0; pointer-events: none; transition: opacity 2.5s; z-index: 100;
         }
 
-        #guide-msg { position: absolute; top: 50%; width: 100%; text-align: center; color: #fff; cursor: pointer; z-index: 200; font-size: 18px; }
+        /* 案内メッセージ：ここがバグの主因でした */
+        #guide-msg { 
+            position: absolute; top: 50%; width: 100%; text-align: center; 
+            color: #fff; cursor: pointer; z-index: 200; font-size: 24px; 
+            font-weight: bold; transform: translateY(-50%);
+        }
     </style>
 </head>
 <body onclick="startJourney()">
 
-    <div id=画面をタップして旅にでよう！</div>
+    <div id="guide-msg">画面をタップして旅にでよう！</div>
 
     <div id="intro-box" class="star-wars-container">
         <div id="text-content" class="crawl-text">
@@ -75,7 +78,8 @@
             さぁ未知への一歩を踏み出そう。<br><br>
             今すぐ、QRコードをスキャンするんだ！<br><br>
             そこには、今までの自分ではない<br>
-            未来の輝かしいあなたが笑顔で手を差し伸べて待っています。
+            未来の輝かしいあなたが笑顔で<br>
+            手を差し伸べて待っています。
         </div>
     </div>
 
@@ -108,10 +112,12 @@
             if (isStarted) return;
             isStarted = true;
             
+            // 案内メッセージを消してテキストを開始
             document.getElementById('guide-msg').style.display = 'none';
             document.getElementById('text-content').style.display = 'block';
             if (audioContext.state === 'suspended') audioContext.resume();
 
+            // 文章量に合わせて時間を20秒に微調整
             setTimeout(() => {
                 document.getElementById('intro-box').style.display = 'none';
                 document.getElementById('door-wrapper').style.display = 'block';
@@ -126,7 +132,7 @@
                     }, 4000);
                 }, 2000);
 
-            }, 18500);
+            }, 20000); 
         }
     </script>
 </body>
